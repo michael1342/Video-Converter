@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Video Converter</title>
+<style>
+  body { font-family: Arial, sans-serif; background:#f2f2f2; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; margin:0; }
+  .container { background:#fff; padding:20px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.1); text-align:center; width:300px; }
+  h2 { margin-bottom:20px; }
+  input[type=file] { margin: 15px 0; }
+  button { padding:10px 20px; background:#007bff; color:#fff; border:none; border-radius:6px; cursor:pointer; }
+  button:hover { background:#0056b3; }
+  #progress { margin-top:15px; font-size:14px; color:#333; }
+  a { display:block; margin-top:20px; text-decoration:none; color:#007bff; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h2>Video Converter</h2>
+  <input type="file" id="uploader" accept="video/*">
+  <button onclick="convertVideo()">Convert to MP4</button>
+  <div id="progress"></div>
+  <a id="downloadLink" style="display:none;">Download Converted Video</a>
+</div>
+
+<!-- Online FFmpeg -->
+ <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.10.1/dist/ffmpeg.min.js"></script>
+<script>
+const { createFFmpeg, fetchFile } = ffmpeg;
+let ffmpeg;  // Declare globally
+
+async function initFFmpeg() {
+  if (!ffmpeg) {
+    ffmpeg = createFFmpeg({ log: true });
+    await ffmpeg.load(); // Ensure it's fully loaded
+  }
+}
+
+async function convertVideo() {
+  const fileInput = document.getElementById('uploader').files[0];
+  if (!fileInput) return alert("Please select a file");
+
+  document.getElementById('progress').textContent = "Initializing FFmpeg...";
+  await initFFmpeg();  // Always initialize before use
+
+  document.getElementById('progress').textContent = "Converting... please wait";
+  ffmpeg.FS('writeFile', 'input', await fetchFile(fileInput));
+  await ffmpeg.run('-i', 'input', '-c:v', 'libx264', '-c:a', 'aac', 'output.mp4');
+
+  const data = ffmpeg.FS('readFile', 'output.mp4');
+  const url = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
+
+  const downloadLink = document.getElementById('downloadLink');
+  downloadLink.href = url;
+  downloadLink.download = 'converted.mp4';
+  downloadLink.style.display = 'block';
+  downloadLink.textContent = 'Download Converted Video';
+  document.getElementById('progress').textContent = "Conversion complete!";
+}
+</script>
+
+</body>
+</html>
